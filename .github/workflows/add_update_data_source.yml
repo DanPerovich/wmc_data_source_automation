@@ -43,7 +43,8 @@ jobs:
           fi
           
           # Modify parsed_response to include name and type
-          modified_response=$(echo "$parsed_response" | jq --arg name "$CSV_FILENAME" '. + {name: $name, type: "CSV"}')
+          #modified_response=$(echo "$parsed_response" | jq --arg name "$CSV_FILENAME" '. + {name: $name, type: "CSV"}')
+          modified_response=$(echo '{"name":"'"$CSV_FILENAME"'","type":"CSV"}' | jq --argjson parsed "$parsed_response" '. + $parsed')
           
           echo "PARSED_DATA=$modified_response" >> $GITHUB_ENV
           echo "Successfully parsed CSV file"
