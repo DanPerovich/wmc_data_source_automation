@@ -57,7 +57,7 @@ jobs:
             -H "Authorization: Token $WIREMOCK_CLOUD_API_TOKEN" \
             -H "Content-Type: application/json" \
             -d "$PARSED_DATA" \
-            "https://api.wiremockapi.cloud/v1/users/${USER_ID}/data-sources")
+            "https://api.wiremock.cloud/v1/users/${USER_ID}/data-sources")
           
           # Extract and save the data source ID
           echo "DATA_SOURCE_ID=$(echo $response | jq -r '.id')" >> $GITHUB_ENV
