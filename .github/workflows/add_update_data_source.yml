@@ -18,7 +18,6 @@ jobs:
       - name: Find New CSV Files
         id: find-csv
         run: |
-          # Find the most recently added CSV file in the data directory
           new_csv=$(find data -name "*.csv" -type f -printf '%T@ %p\n' | sort -n | tail -1 | cut -d' ' -f2-)
           
           if [ -z "$new_csv" ]; then
@@ -27,42 +26,38 @@ jobs:
           fi
           
           echo "CSV_PATH=$new_csv" >> $GITHUB_ENV
+          echo "CSV_FILENAME=$(basename "$new_csv" .csv)" >> $GITHUB_ENV
           echo "Found new CSV file: $new_csv"
 
       - name: Parse CSV File
         run: |
-          # Make the first API call to parse the CSV
-          echo "Parsing CSV file: $CSV_PATH"
           parsed_response=$(curl -X POST \
             -H "Authorization: Token $WIREMOCK_CLOUD_API_TOKEN" \
             -H "Content-Type: text/csv" \
             --data-binary "@$CSV_PATH" \
             https://api.wiremock.cloud/v1/data-sources/parse)
           
-          # Check if parsing was successful
           if [ $? -ne 0 ]; then
             echo "Failed to parse CSV file"
             exit 1
           fi
           
-          # Save the parsed response to use in the next step
-          echo "PARSED_DATA=$parsed_response" >> $GITHUB_ENV
+          # Modify parsed_response to include name and type
+          modified_response=$(echo "$parsed_response" | jq --arg name "$CSV_FILENAME" '. + {name: $name, type: "CSV"}')
+          
+          echo "PARSED_DATA=$modified_response" >> $GITHUB_ENV
           echo "Successfully parsed CSV file"
 
       - name: Create Data Source
         run: |
-          # Make the second API call to create the data source
-          echo "Creating data source..."
           response=$(curl -X POST \
             -H "Authorization: Token $WIREMOCK_CLOUD_API_TOKEN" \
             -H "Content-Type: application/json" \
             -d "$PARSED_DATA" \
             "https://api.wiremock.cloud/v1/users/${USER_ID}/data-sources")
           
-          # Extract and save the data source ID
           echo "DATA_SOURCE_ID=$(echo $response | jq -r '.id')" >> $GITHUB_ENV
           
-          # Check if data source was created successfully
           if [ -z "$DATA_SOURCE_ID" ] || [ "$DATA_SOURCE_ID" = "null" ]; then
             echo "Failed to create data source. Response: $response"
             exit 1
