@@ -93,7 +93,7 @@ jobs:
           #  exit 1
           #fi
 
-          DATA_SOURCE_ID=$(echo "$response" | jq -r '.dataSource.id' | tr -d '[:space:]') # Trim whitespace
+          echo "DATA_SOURCE_ID=$(echo "$response" | jq -r '.dataSource.id' | tr -d '[:space:]')" >> $GITHUB_ENV
 
           if [ $? -ne 0 ]; then
             echo "Failed to extract data source ID with jq"
