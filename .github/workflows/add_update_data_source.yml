@@ -27,27 +27,30 @@ jobs:
           CHANGED_FILES="${{ steps.changed-files.outputs.all_changed_files }}"
 
           NEW_FILES_COUNT=$(echo "$CHANGED_FILES" | grep -oE '^A\s+data/.*\.csv$' | wc -l)
-          MODIFIED_FILES_COUNT=$(echo "$CHANGED_FILES" | grep -oE '^M\s+data/.*\.csv$' | wc -l)
 
-          echo "new_files_count=$NEW_FILES_COUNT" | tee -a $GITHUB_OUTPUT  # Use tee and append
-          echo "modified_files_count=$MODIFIED_FILES_COUNT" | tee -a $GITHUB_OUTPUT # Use tee and append
+          echo "new_files_count=$NEW_FILES_COUNT" | tee -a $GITHUB_OUTPUT
 
           if [[ $NEW_FILES_COUNT -gt 0 ]]; then
             NEW_FILES=$(echo "$CHANGED_FILES" | grep -oE '^A\s+data/.*\.csv$' | cut -d' ' -f2)
-            echo "new_csv_files=$NEW_FILES" | tee -a $GITHUB_OUTPUT # Use tee and append
+            echo "new_csv_files=$NEW_FILES" | tee -a $GITHUB_OUTPUT
             echo "New CSV files detected:"
             echo "$NEW_FILES"
           else
-            echo "new_csv_files=" | tee -a $GITHUB_OUTPUT # Important: Set an empty string if no files
+            echo "new_csv_files=" | tee -a $GITHUB_OUTPUT
           fi
 
+          # Improved logic for modified files
+          MODIFIED_FILES=$(git diff-tree -r --name-only HEAD^ HEAD | grep 'data/.*\.csv$') # Use git diff-tree
+          MODIFIED_FILES_COUNT=$(echo "$MODIFIED_FILES" | wc -l)
+
+          echo "modified_files_count=$MODIFIED_FILES_COUNT" | tee -a $GITHUB_OUTPUT
+
           if [[ $MODIFIED_FILES_COUNT -gt 0 ]]; then
-            MODIFIED_FILES=$(echo "$CHANGED_FILES" | grep -oE '^M\s+data/.*\.csv$' | cut -d' ' -f2)
-            echo "modified_csv_files=$MODIFIED_FILES" | tee -a $GITHUB_OUTPUT # Use tee and append
+            echo "modified_csv_files=$MODIFIED_FILES" | tee -a $GITHUB_OUTPUT
             echo "Modified CSV files detected:"
             echo "$MODIFIED_FILES"
           else
-            echo "modified_csv_files=" | tee -a $GITHUB_OUTPUT # Important: Set an empty string if no files
+            echo "modified_csv_files=" | tee -a $GITHUB_OUTPUT
           fi
 
       - name: Take action on new files
