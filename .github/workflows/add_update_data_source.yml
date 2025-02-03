@@ -103,3 +103,8 @@ jobs:
           fi
           
           echo "Successfully created data source with ID: $DATA_SOURCE_ID"
+
+      - name: Output Results
+        run: |
+          #echo "Data Source ID: $DATA_SOURCE_ID"
+          echo "Done"
