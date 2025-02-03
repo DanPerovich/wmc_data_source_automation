@@ -85,9 +85,22 @@ jobs:
             -d "$PARSED_DATA" \
             "https://api.wiremock.cloud/v1/users/${USER_ID}/data-sources")
           
-          echo "DATA_SOURCE_ID=$(echo $response | jq -r '.dataSource.id')" >> $GITHUB_ENV
-          echo "DATA_SOURCE_ID=$(echo $response | jq -r '.dataSource.id')"
+          #echo "DATA_SOURCE_ID=$(echo $response | jq -r '.dataSource.id')" >> $GITHUB_ENV
+          #echo "DATA_SOURCE_ID=$(echo $response | jq -r '.dataSource.id')"
           
+          #if [ -z "$DATA_SOURCE_ID" ] || [ "$DATA_SOURCE_ID" = "null" ]; then
+          #  echo "Failed to create data source. Response: $response"
+          #  exit 1
+          #fi
+
+          DATA_SOURCE_ID=$(echo "$response" | jq -r '.dataSource.id' | tr -d '[:space:]') # Trim whitespace
+
+          if [ $? -ne 0 ]; then
+            echo "Failed to extract data source ID with jq"
+            echo "Raw response: $response"
+            exit 1
+          fi
+
           if [ -z "$DATA_SOURCE_ID" ] || [ "$DATA_SOURCE_ID" = "null" ]; then
             echo "Failed to create data source. Response: $response"
             exit 1
