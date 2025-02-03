@@ -46,7 +46,9 @@ jobs:
           #modified_response=$(echo "$parsed_response" | jq --arg name "$CSV_FILENAME" '. + {name: $name, type: "CSV"}')
           #modified_response=$(echo '{"name":"'"$CSV_FILENAME"'","type":"CSV"}' | jq --argjson parsed "$parsed_response" '. + $parsed')          
           #modified_response=$(echo "$parsed_response" | jq '{dataSource: {name: "'"$CSV_FILENAME"'", type: "CSV"} + .}')
-          modified_response=$(echo "$parsed_response" | jq '.dataSource.name="'"$CSV_FILENAME"'" | .dataSource.type="CSV"')
+          #modified_response=$(echo "$parsed_response" | jq '.dataSource.name="'"$CSV_FILENAME"'" | .dataSource.type="CSV"')
+          #modified_response=$(echo "$parsed_response" | jq '{name: "'"$CSV_FILENAME"'", type: "CSV", dataSource: .dataSource}')
+          modified_response=$(echo "$parsed_response" | jq '.dataSource.name="'"$CSV_FILENAME"'" | .dataSource.type="CSV" | {dataSource: .dataSource}')
 
           echo "modified_response= $modified_response"
 
