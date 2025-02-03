@@ -26,40 +26,39 @@ jobs:
         run: |
           CHANGED_FILES="${{ steps.changed-files.outputs.all_changed_files }}"
 
-          NEW_FILES=$(echo "$CHANGED_FILES" | grep -oE '^A\s+data/.*\.csv$' | wc -l)
-          MODIFIED_FILES=$(echo "$CHANGED_FILES" | grep -oE '^M\s+data/.*\.csv$' | wc -l) # M for modified
+          NEW_FILES_COUNT=$(echo "$CHANGED_FILES" | grep -oE '^A\s+data/.*\.csv$' | wc -l)
+          MODIFIED_FILES_COUNT=$(echo "$CHANGED_FILES" | grep -oE '^M\s+data/.*\.csv$' | wc -l)
 
-          if [[ $NEW_FILES -gt 0 ]]; then
-            echo "::set-output name=new_csv_found::true"
-            echo "New CSV files detected:"
-            echo "$CHANGED_FILES" | grep -oE '^A\s+data/.*\.csv$' | cut -d' ' -f2
+          echo "new_files_count=$NEW_FILES_COUNT" >> $GITHUB_OUTPUT
+          echo "modified_files_count=$MODIFIED_FILES_COUNT" >> $GITHUB_OUTPUT
+
+          if [[ $NEW_FILES_COUNT -gt 0 ]]; then
+            echo "new_csv_files=$(echo "$CHANGED_FILES" | grep -oE '^A\s+data/.*\.csv$' | cut -d' ' -f2)" >> $GITHUB_OUTPUT
           else
-            echo "::set-output name=new_csv_found::false"
+            echo "new_csv_files=" >> $GITHUB_OUTPUT
           fi
 
-          if [[ $MODIFIED_FILES -gt 0 ]]; then
-            echo "::set-output name=modified_csv_found::true"
-            echo "Modified CSV files detected:"
-            echo "$CHANGED_FILES" | grep -oE '^M\s+data/.*\.csv$' | cut -d' ' -f2
+          if [[ $MODIFIED_FILES_COUNT -gt 0 ]]; then
+            echo "modified_csv_files=$(echo "$CHANGED_FILES" | grep -oE '^M\s+data/.*\.csv$' | cut -d' ' -f2)" >> $GITHUB_OUTPUT
           else
-            echo "::set-output name=modified_csv_found::false"
+            echo "modified_csv_files=" >> $GITHUB_OUTPUT
           fi
 
-      - name: Take action on new files (example)
-        if: steps.check-changes.outputs.new_csv_found == 'true'
+      - name: Take action on new files
+        if: steps.check-changes.outputs.new_files_count > 0
         run: |
           echo "Performing actions on NEW CSV files..."
-          NEW_FILES=$(echo "${{ steps.changed-files.outputs.all_changed_files }}" | grep -oE '^A\s+data/.*\.csv$' | cut -d' ' -f2)
+          NEW_FILES=$(echo "${{ steps.check-changes.outputs.new_csv_files }}")
           for file in $NEW_FILES; do
             echo "Processing new file: $file"
             # Your commands to process each NEW file here
           done
 
-      - name: Take action on modified files (example)
-        if: steps.check-changes.outputs.modified_csv_found == 'true'
+      - name: Take action on modified files
+        if: steps.check-changes.outputs.modified_files_count > 0
         run: |
           echo "Performing actions on MODIFIED CSV files..."
-          MODIFIED_FILES=$(echo "${{ steps.changed-files.outputs.all_changed_files }}" | grep -oE '^M\s+data/.*\.csv$' | cut -d' ' -f2)
+          MODIFIED_FILES=$(echo "${{ steps.check-changes.outputs.modified_csv_files }}")
           for file in $MODIFIED_FILES; do
             echo "Processing modified file: $file"
             # Your commands to process each MODIFIED file here
