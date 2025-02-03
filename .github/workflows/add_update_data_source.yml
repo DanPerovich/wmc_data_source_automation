@@ -19,32 +19,38 @@ jobs:
         id: find-csv
         run: |
           if [[ $GITHUB_EVENT_NAME == 'push' ]]; then
-            # Check if there's a previous commit.  This handles the initial commit case.
             if git rev-parse --verify HEAD^1 >/dev/null 2>&1; then
               base_sha=$(git rev-parse HEAD^1)
             else
               echo "No previous commit found (initial commit). Using current SHA."
-              base_sha=$GITHUB_SHA # or any other default behavior you want
+              base_sha=$GITHUB_SHA
             fi
-          elif [[ $GITHUB_EVENT_NAME == 'pull_request' ]]; then  # Handle pull requests
-            base_sha=$GITHUB_BASE_REF # Use the base branch for PRs
+          elif [[ $GITHUB_EVENT_NAME == 'pull_request' ]]; then
+            base_sha=$GITHUB_BASE_REF
           else
-              base_sha=$GITHUB_SHA # For other events, use the current SHA
+            base_sha=$GITHUB_SHA
           fi
 
-          added_files=$(git diff --name-only --diff-filter=A $base_sha $GITHUB_SHA)
-          
-          # Find the first CSV file in the data directory
-          new_csv=$(echo "$added_files" | grep '^data/.*\.csv$' | head -1)
-          
-          if [ -z "$new_csv" ]; then
-            echo "No new CSV files found"
-            exit 1
+          # Crucial change: Use the correct path and ensure the data directory exists
+          data_dir="data"  # Or wherever your data directory is
+
+          if [[ -d "$data_dir" ]]; then # Check if data directory exists
+            added_files=$(git diff --name-only --diff-filter=A $base_sha $GITHUB_SHA -- "$data_dir")
+            # Filter for CSV files within the data directory
+            new_csv=$(echo "$added_files" | grep '\.csv$' | head -1) # Filter for CSVs
+          else
+            echo "Data directory '$data_dir' not found."
+            exit 0 # Or exit 1 if you want the workflow to fail
           fi
-          
-          echo "CSV_PATH=$new_csv" >> $GITHUB_ENV
+
+          if [ -z "$new_csv" ]; then
+            echo "No new CSV files found in '$data_dir'."
+            exit 0 # Or exit 1 if you want the workflow to fail
+          fi
+
+          echo "CSV_PATH=$data_dir/$new_csv" >> $GITHUB_ENV # Include full path
           echo "CSV_FILENAME=$(basename "$new_csv" .csv)" >> $GITHUB_ENV
-          echo "Found new CSV file: $new_csv"
+          echo "Found new CSV file: $CSV_PATH"
 
       - name: Parse CSV File
         run: |
