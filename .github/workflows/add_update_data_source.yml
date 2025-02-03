@@ -78,6 +78,6 @@ jobs:
             CSV_FILENAME=$(basename "$new_csv" .csv)
             response=$(curl --request GET \
                 -H "Authorization: Token $WIREMOCK_CLOUD_API_TOKEN" \
-                -url "https://api.wiremock.cloud/v1/users/${USER_ID}/data-sources?q=${CSV_FILENAME}")
+                --url "https://api.wiremock.cloud/v1/users/${USER_ID}/data-sources?q=${CSV_FILENAME}")
             echo "DATA_SOURCE_ID=$(echo "$response" | jq -r '.dataSources[0].id' | tr -d '[:space:]')"
           done
