@@ -18,7 +18,10 @@ jobs:
       - name: Find New CSV Files
         id: find-csv
         run: |
-          new_csv=$(find data -name "*.csv" -type f -printf '%T@ %p\n' | sort -n | tail -1 | cut -d' ' -f2-)
+          #new_csv=$(find data -name "*.csv" -type f -printf '%T@ %p\n' | sort -n | tail -1 | cut -d' ' -f2-)
+          # Use git diff to find added CSV files
+          new_csv=$(git diff --name-only --diff-filter=A ${{ github.sha }}^..${{ github.sha }} | grep '\.csv$' | head -1)
+    
           
           if [ -z "$new_csv" ]; then
             echo "No new CSV files found"
