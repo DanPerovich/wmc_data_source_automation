@@ -80,4 +80,22 @@ jobs:
                 -H "Authorization: Token $WIREMOCK_CLOUD_API_TOKEN" \
                 --url "https://api.wiremock.cloud/v1/users/${USER_ID}/data-sources?q=$(basename "$file" .csv)")
             echo "DATA_SOURCE_ID=$(echo "$response" | jq -r '.dataSources[0].id' | tr -d '[:space:]')"
+
+            # Parse CSV file 
+            parsed_response=$(curl -X POST \
+                -H "Authorization: Token $WIREMOCK_CLOUD_API_TOKEN" \
+                -H "Content-Type: text/csv" \
+                --data-binary "@$file" \
+                https://api.wiremock.cloud/v1/data-sources/parse)
+            
+            if [ $? -ne 0 ]; then
+                echo "Failed to parse CSV file"
+                exit 1
+            fi
+            
+            # Modify parsed_response to include name and type
+            modified_response=$(echo "$parsed_response" | jq -c '.dataSource.name="'"$(basename "$file" .csv)"'" | .dataSource.type="CSV" | {dataSource: .dataSource}')
+
+            echo "PARSED_DATA=$modified_response"
+            echo "Successfully parsed CSV file"
           done
