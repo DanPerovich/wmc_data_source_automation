@@ -1,123 +1,66 @@
-name: Create WireMock Data Source from CSV
+name: Detect New and Changed CSV Files
+
 on:
   push:
+    branches:
+      - main # Or your main branch name
     paths:
-      - 'data/**'
-
-env:
-  WIREMOCK_CLOUD_API_TOKEN: ${{ secrets.WIREMOCK_CLOUD_API_TOKEN }}
-  USER_ID: ${{ secrets.WIREMOCK_USER_ID }}
+      - 'data/**' # Watch for changes in the data directory
 
 jobs:
-  create-datasource:
+  check-csv-changes:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
+
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v37
         with:
-          fetch-depth: 0  # Fetch all history
+          format: space-delimited
+          files: 'data/*.csv'
 
-      - name: Find New CSV Files
-        id: find-csv
+      - name: Check for new and changed CSV files
+        id: check-changes
         run: |
-          if [[ $GITHUB_EVENT_NAME == 'push' ]]; then
-            if git rev-parse --verify HEAD^1 >/dev/null 2>&1; then
-              base_sha=$(git rev-parse HEAD^1)
-            else
-              echo "No previous commit found (initial commit). Using current SHA."
-              base_sha=$(git rev-parse HEAD) # Use HEAD for initial commit
-            fi
-          elif [[ $GITHUB_EVENT_NAME == 'pull_request' ]]; then
-            base_sha=$GITHUB_BASE_REF
+          CHANGED_FILES="${{ steps.changed-files.outputs.all_changed_files }}"
+
+          NEW_FILES=$(echo "$CHANGED_FILES" | grep -oE '^A\s+data/.*\.csv$' | wc -l)
+          MODIFIED_FILES=$(echo "$CHANGED_FILES" | grep -oE '^M\s+data/.*\.csv$' | wc -l) # M for modified
+
+          if [[ $NEW_FILES -gt 0 ]]; then
+            echo "::set-output name=new_csv_found::true"
+            echo "New CSV files detected:"
+            echo "$CHANGED_FILES" | grep -oE '^A\s+data/.*\.csv$' | cut -d' ' -f2
           else
-            base_sha=$GITHUB_SHA
+            echo "::set-output name=new_csv_found::false"
           fi
 
-          data_dir="data"
-          new_csv="" # Initialize new_csv to an empty string
-
-          if [[ -d "$data_dir" ]]; then
-            # Check if the data directory exists within the commit being checked
-            if git ls-tree "$base_sha:$data_dir" > /dev/null 2>&1; then # Check if data_dir exists in base_sha
-              git diff --name-only -z --diff-filter=A "$base_sha" "$GITHUB_SHA" -- "$data_dir" | while IFS= read -r -d $'\0' file; do
-                if [[ "$file" == *.csv ]]; then
-                  new_csv="$file"
-                  break
-                fi
-              done
-            else
-              # If data_dir doesn't exist in base_sha, it's a new directory, check current commit
-              git ls-tree "$GITHUB_SHA:$data_dir" > /dev/null 2>&1 && \
-                find "$data_dir" -name "*.csv" -print0 | while IFS= read -r -d $'\0' file; do
-                  new_csv="$file"
-                  break
-                done
-            fi
+          if [[ $MODIFIED_FILES -gt 0 ]]; then
+            echo "::set-output name=modified_csv_found::true"
+            echo "Modified CSV files detected:"
+            echo "$CHANGED_FILES" | grep -oE '^M\s+data/.*\.csv$' | cut -d' ' -f2
           else
-            echo "Data directory '$data_dir' not found."
-            exit 0
+            echo "::set-output name=modified_csv_found::false"
           fi
 
-          if [ -z "$new_csv" ]; then
-            echo "No new CSV files found in '$data_dir'."
-            exit 0
-          fi
-
-          echo "CSV_PATH=$new_csv" >> $GITHUB_ENV
-          echo "CSV_FILENAME=$(basename "$new_csv" .csv)" >> $GITHUB_ENV
-          echo "Found new CSV file: $(basename "$new_csv" .csv)"
-
-      - name: Parse CSV File
+      - name: Take action on new files (example)
+        if: steps.check-changes.outputs.new_csv_found == 'true'
         run: |
-          parsed_response=$(curl -X POST \
-            -H "Authorization: Token $WIREMOCK_CLOUD_API_TOKEN" \
-            -H "Content-Type: text/csv" \
-            --data-binary "@$CSV_PATH" \
-            https://api.wiremock.cloud/v1/data-sources/parse)
-          
-          if [ $? -ne 0 ]; then
-            echo "Failed to parse CSV file"
-            exit 1
-          fi
-          
-          # Modify parsed_response to include name and type
-          modified_response=$(echo "$parsed_response" | jq -c '.dataSource.name="'"$CSV_FILENAME"'" | .dataSource.type="CSV" | {dataSource: .dataSource}')
+          echo "Performing actions on NEW CSV files..."
+          NEW_FILES=$(echo "${{ steps.changed-files.outputs.all_changed_files }}" | grep -oE '^A\s+data/.*\.csv$' | cut -d' ' -f2)
+          for file in $NEW_FILES; do
+            echo "Processing new file: $file"
+            # Your commands to process each NEW file here
+          done
 
-          echo "PARSED_DATA=$(echo "$modified_response" | tr -d '\n')" >> "$GITHUB_ENV"
-          echo "Successfully parsed CSV file"
-
-      - name: Create Data Source
+      - name: Take action on modified files (example)
+        if: steps.check-changes.outputs.modified_csv_found == 'true'
         run: |
-          response=$(curl -X POST \
-            -H "Authorization: Token $WIREMOCK_CLOUD_API_TOKEN" \
-            -H "Content-Type: application/json" \
-            -d "$PARSED_DATA" \
-            "https://api.wiremock.cloud/v1/users/${USER_ID}/data-sources")
-          
-          #echo "DATA_SOURCE_ID=$(echo $response | jq -r '.dataSource.id')" >> $GITHUB_ENV
-          #echo "DATA_SOURCE_ID=$(echo $response | jq -r '.dataSource.id')"
-          
-          #if [ -z "$DATA_SOURCE_ID" ] || [ "$DATA_SOURCE_ID" = "null" ]; then
-          #  echo "Failed to create data source. Response: $response"
-          #  exit 1
-          #fi
-
-          echo "DATA_SOURCE_ID=$(echo "$response" | jq -r '.dataSource.id' | tr -d '[:space:]')" >> $GITHUB_ENV
-
-          if [ $? -ne 0 ]; then
-            echo "Failed to extract data source ID with jq"
-            echo "Raw response: $response"
-            exit 1
-          fi
-
-          if [ -z "$DATA_SOURCE_ID" ] || [ "$DATA_SOURCE_ID" = "null" ]; then
-            echo "Failed to create data source. Response: $response"
-            exit 1
-          fi
-          
-          echo "Successfully created data source with ID: $DATA_SOURCE_ID"
-
-      - name: Output Results
-        run: |
-          #echo "Data Source ID: $DATA_SOURCE_ID"
-          echo "Done"
+          echo "Performing actions on MODIFIED CSV files..."
+          MODIFIED_FILES=$(echo "${{ steps.changed-files.outputs.all_changed_files }}" | grep -oE '^M\s+data/.*\.csv$' | cut -d' ' -f2)
+          for file in $MODIFIED_FILES; do
+            echo "Processing modified file: $file"
+            # Your commands to process each MODIFIED file here
+          done
