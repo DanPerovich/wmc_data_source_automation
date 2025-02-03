@@ -97,12 +97,13 @@ jobs:
             fi
             
             # Modify parsed_response to include name and type
-            #modified_response=$(echo "$parsed_response" | jq -c '.dataSource.name="'"$(basename "$file" .csv)"'" | .dataSource.type="CSV" | {dataSource: .dataSource}')
+            modified_response=$(echo "$parsed_response" | jq -c '.dataSource.name="'"$(basename "$file" .csv)"'" | .dataSource.type="CSV" | {dataSource: .dataSource}')
 
 
-            #echo "Successfully parsed CSV file"
+            echo "Successfully parsed CSV file"
+            echo "API-ready CSV payload: ${modified_response}"
 
             # Update Data Source
-            #echo "https://api.wiremock.cloud/v1/data-sources/${DATA_SOURCE_ID}"
+            echo "https://api.wiremock.cloud/v1/data-sources/${DATA_SOURCE_ID}"
             #put_response=$(curl -X PUT -H "Authorization: Token $WIREMOCK_CLOUD_API_TOKEN" -H "Content-Type: application/json" -d "${modified_response}" --url "https://api.wiremock.cloud/v1/data-sources/${DATA_SOURCE_ID}")
           done
