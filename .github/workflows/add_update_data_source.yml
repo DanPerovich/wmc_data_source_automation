@@ -100,6 +100,6 @@ jobs:
             echo "Successfully parsed CSV file"
 
             # Update Data Source
-            echo "https://api.wiremock.cloud/v1/data-sources/${DATA_SOURCE_ID}"
+            #echo "https://api.wiremock.cloud/v1/data-sources/${DATA_SOURCE_ID}"
             #put_response=$(curl -X PUT -H "Authorization: Token $WIREMOCK_CLOUD_API_TOKEN" -H "Content-Type: application/json" -d "${modified_response}" --url "https://api.wiremock.cloud/v1/data-sources/${DATA_SOURCE_ID}")
           done
