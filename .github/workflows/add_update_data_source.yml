@@ -75,7 +75,7 @@ jobs:
           for file in $MODIFIED_FILES; do
             # Your commands to process each MODIFIED file here
             echo "Processing modified file: $file / $(basename "$file" .csv)"
-            CSV_FILENAME=$(basename "$new_csv" .csv)
+            echo "CSV_FILENAME=$(basename "$new_csv" .csv)" >> $GITHUB_ENV
             echo "CSV_FILENAME=${CSV_FILENAME}"
             echo "Call api with url: 'https://api.wiremock.cloud/v1/users/${USER_ID}/data-sources?q=${CSV_FILENAME}'"
             response=$(curl --request GET \
