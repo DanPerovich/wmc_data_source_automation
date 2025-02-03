@@ -29,19 +29,25 @@ jobs:
           NEW_FILES_COUNT=$(echo "$CHANGED_FILES" | grep -oE '^A\s+data/.*\.csv$' | wc -l)
           MODIFIED_FILES_COUNT=$(echo "$CHANGED_FILES" | grep -oE '^M\s+data/.*\.csv$' | wc -l)
 
-          echo "new_files_count=$NEW_FILES_COUNT" >> $GITHUB_OUTPUT
-          echo "modified_files_count=$MODIFIED_FILES_COUNT" >> $GITHUB_OUTPUT
+          echo "new_files_count=$NEW_FILES_COUNT" | tee -a $GITHUB_OUTPUT  # Use tee and append
+          echo "modified_files_count=$MODIFIED_FILES_COUNT" | tee -a $GITHUB_OUTPUT # Use tee and append
 
           if [[ $NEW_FILES_COUNT -gt 0 ]]; then
-            echo "new_csv_files=$(echo "$CHANGED_FILES" | grep -oE '^A\s+data/.*\.csv$' | cut -d' ' -f2)" >> $GITHUB_OUTPUT
+            NEW_FILES=$(echo "$CHANGED_FILES" | grep -oE '^A\s+data/.*\.csv$' | cut -d' ' -f2)
+            echo "new_csv_files=$NEW_FILES" | tee -a $GITHUB_OUTPUT # Use tee and append
+            echo "New CSV files detected:"
+            echo "$NEW_FILES"
           else
-            echo "new_csv_files=" >> $GITHUB_OUTPUT
+            echo "new_csv_files=" | tee -a $GITHUB_OUTPUT # Important: Set an empty string if no files
           fi
 
           if [[ $MODIFIED_FILES_COUNT -gt 0 ]]; then
-            echo "modified_csv_files=$(echo "$CHANGED_FILES" | grep -oE '^M\s+data/.*\.csv$' | cut -d' ' -f2)" >> $GITHUB_OUTPUT
+            MODIFIED_FILES=$(echo "$CHANGED_FILES" | grep -oE '^M\s+data/.*\.csv$' | cut -d' ' -f2)
+            echo "modified_csv_files=$MODIFIED_FILES" | tee -a $GITHUB_OUTPUT # Use tee and append
+            echo "Modified CSV files detected:"
+            echo "$MODIFIED_FILES"
           else
-            echo "modified_csv_files=" >> $GITHUB_OUTPUT
+            echo "modified_csv_files=" | tee -a $GITHUB_OUTPUT # Important: Set an empty string if no files
           fi
 
       - name: Take action on new files
