@@ -7,6 +7,10 @@ on:
     paths:
       - 'data/**' # Watch for changes in the data directory
 
+env:
+  WIREMOCK_CLOUD_API_TOKEN: ${{ secrets.WIREMOCK_CLOUD_API_TOKEN }}
+  USER_ID: ${{ secrets.WIREMOCK_USER_ID }}
+
 jobs:
   check-csv-changes:
     runs-on: ubuntu-latest
@@ -71,4 +75,8 @@ jobs:
           for file in $MODIFIED_FILES; do
             echo "Processing modified file: $file"
             # Your commands to process each MODIFIED file here
+            response=$(curl --request GET \
+                -H "Authorization: Token $WIREMOCK_CLOUD_API_TOKEN" \
+                -url "https://api.wiremock.cloud/v1/users/${USER_ID}/data-sources?q=Products_dev")
+            echo "$(response | jp -r '.dataSources[0].id')"
           done
