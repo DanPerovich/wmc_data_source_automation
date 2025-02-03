@@ -86,6 +86,7 @@ jobs:
             "https://api.wiremock.cloud/v1/users/${USER_ID}/data-sources")
           
           echo "DATA_SOURCE_ID=$(echo $response | jq -r '.dataSource.id')" >> $GITHUB_ENV
+          echo "DATA_SOURCE_ID=$(echo $response | jq -r '.dataSource.id')"
           
           if [ -z "$DATA_SOURCE_ID" ] || [ "$DATA_SOURCE_ID" = "null" ]; then
             echo "Failed to create data source. Response: $response"
