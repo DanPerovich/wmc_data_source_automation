@@ -50,7 +50,8 @@ jobs:
             exit 0 # Or exit 1 if you want the workflow to fail
           fi
 
-          echo "CSV_PATH=$data_dir/$new_csv" >> $GITHUB_ENV # Include full path
+          #echo "CSV_PATH=$data_dir/$new_csv" >> $GITHUB_ENV # Include full path
+          echo "CSV_PATH=$new_csv" >> $GITHUB_ENV # Include full path
           echo "CSV_FILENAME=$(basename "$new_csv" .csv)" >> $GITHUB_ENV
           echo "Found new CSV file: $CSV_PATH"
 
