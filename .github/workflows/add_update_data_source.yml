@@ -73,11 +73,11 @@ jobs:
           echo "Performing actions on MODIFIED CSV files..."
           MODIFIED_FILES=$(echo "${{ steps.check-changes.outputs.modified_csv_files }}")
           for file in $MODIFIED_FILES; do
-            echo "Processing modified file: $file"
             # Your commands to process each MODIFIED file here
+            echo "Processing modified file: $file / $(basename "$file" .csv)"
+            CSV_FILENAME=$(basename "$new_csv" .csv)
             response=$(curl --request GET \
                 -H "Authorization: Token $WIREMOCK_CLOUD_API_TOKEN" \
-                -url "https://api.wiremock.cloud/v1/users/${USER_ID}/data-sources?q=Products_dev")
+                -url "https://api.wiremock.cloud/v1/users/${USER_ID}/data-sources?q=${CSV_FILENAME}")
             echo "DATA_SOURCE_ID=$(echo "$response" | jq -r '.dataSources[0].id' | tr -d '[:space:]')"
-            #echo "DATA_SOURCE_ID=$(echo "$response" | jq -r '.dataSource.id' | tr -d '[:space:]')" >> $GITHUB_ENV
           done
