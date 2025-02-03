@@ -25,7 +25,7 @@ jobs:
               base_sha=$(git rev-parse HEAD^1)
             else
               echo "No previous commit found (initial commit). Using current SHA."
-              base_sha=$GITHUB_SHA
+              base_sha=$(git rev-parse HEAD) # Use HEAD for initial commit
             fi
           elif [[ $GITHUB_EVENT_NAME == 'pull_request' ]]; then
             base_sha=$GITHUB_BASE_REF
@@ -34,15 +34,25 @@ jobs:
           fi
 
           data_dir="data"
+          new_csv="" # Initialize new_csv to an empty string
 
           if [[ -d "$data_dir" ]]; then
-            git diff --name-only -z --diff-filter=A "$base_sha" "$GITHUB_SHA" -- "$data_dir" | while IFS= read -r -d $'\0' file; do
-              if [[ "$file" == *.csv ]]; then
-                new_csv="$file"
-                break  # Stop after finding the first CSV
-              fi
-            done
-
+            # Check if the data directory exists within the commit being checked
+            if git ls-tree "$base_sha:$data_dir" > /dev/null 2>&1; then # Check if data_dir exists in base_sha
+              git diff --name-only -z --diff-filter=A "$base_sha" "$GITHUB_SHA" -- "$data_dir" | while IFS= read -r -d $'\0' file; do
+                if [[ "$file" == *.csv ]]; then
+                  new_csv="$file"
+                  break
+                fi
+              done
+            else
+              # If data_dir doesn't exist in base_sha, it's a new directory, check current commit
+              git ls-tree "$GITHUB_SHA:$data_dir" > /dev/null 2>&1 && \
+                find "$data_dir" -name "*.csv" -print0 | while IFS= read -r -d $'\0' file; do
+                  new_csv="$file"
+                  break
+                done
+            fi
           else
             echo "Data directory '$data_dir' not found."
             exit 0
