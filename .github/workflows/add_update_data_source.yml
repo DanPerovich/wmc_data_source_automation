@@ -33,26 +33,34 @@ jobs:
             base_sha=$GITHUB_SHA
           fi
 
-          # Crucial change: Use the correct path and ensure the data directory exists
-          data_dir="data"  # Or wherever your data directory is
+          data_dir="data"
 
-          if [[ -d "$data_dir" ]]; then # Check if data directory exists
-            added_files=$(git diff --name-only --diff-filter=A $base_sha $GITHUB_SHA -- "$data_dir")
-            # Filter for CSV files within the data directory
-            new_csv=$(echo "$added_files" | grep '\.csv$' | head -1) # Filter for CSVs
+          if [[ -d "$data_dir" ]]; then
+            # Use git diff --name-only -z to handle filenames with spaces and special characters
+            added_files=$(git diff --name-only -z --diff-filter=A "$base_sha" "$GITHUB_SHA" -- "$data_dir")
+
+            # Use read -r -d $'\0' to safely iterate over the null-terminated filenames
+            while IFS= read -r -d $'\0' file; do
+              if [[ "$file" == *.csv ]]; then
+                new_csv="$file"
+                break  # Stop after finding the first CSV
+              fi
+            done
+
           else
             echo "Data directory '$data_dir' not found."
-            exit 0 # Or exit 1 if you want the workflow to fail
+            exit 0
           fi
 
           if [ -z "$new_csv" ]; then
             echo "No new CSV files found in '$data_dir'."
-            exit 0 # Or exit 1 if you want the workflow to fail
+            exit 0
           fi
 
-          echo "CSV_PATH=$new_csv" >> $GITHUB_ENV # Include full path
+          echo "CSV_PATH=$new_csv" >> $GITHUB_ENV
           echo "CSV_FILENAME=$(basename "$new_csv" .csv)" >> $GITHUB_ENV
-          echo "Found new CSV file: $(basename "$new_csv" .csv)
+          echo "Found new CSV file: $(basename "$new_csv" .csv)"
+
 
       - name: Parse CSV File
         run: |
