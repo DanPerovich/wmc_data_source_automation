@@ -18,8 +18,12 @@ jobs:
       - name: Find New CSV Files
         id: find-csv
         run: |
-          # Use GitHub Actions context to get all added files
-          added_files=$(git diff --name-only --diff-filter=A ${{ github.event.before }} ${{ github.sha }})
+          if [[ $GITHUB_EVENT_NAME == 'push' ]]; then
+            base_sha=$(git rev-parse HEAD^1) # Get the parent of the last commit
+          else
+            base_sha=$GITHUB_SHA # For other events, use the current SHA
+          fi
+          added_files=$(git diff --name-only --diff-filter=A $base_sha $GITHUB_SHA)
           
           # Find the first CSV file in the data directory
           new_csv=$(echo "$added_files" | grep '^data/.*\.csv$' | head -1)
