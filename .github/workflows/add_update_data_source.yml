@@ -50,10 +50,9 @@ jobs:
             exit 0 # Or exit 1 if you want the workflow to fail
           fi
 
-          #echo "CSV_PATH=$data_dir/$new_csv" >> $GITHUB_ENV # Include full path
           echo "CSV_PATH=$new_csv" >> $GITHUB_ENV # Include full path
           echo "CSV_FILENAME=$(basename "$new_csv" .csv)" >> $GITHUB_ENV
-          echo "Found new CSV file: $CSV_PATH"
+          echo "Found new CSV file: $(basename "$new_csv" .csv)
 
       - name: Parse CSV File
         run: |
@@ -71,11 +70,8 @@ jobs:
           # Modify parsed_response to include name and type
           modified_response=$(echo "$parsed_response" | jq -c '.dataSource.name="'"$CSV_FILENAME"'" | .dataSource.type="CSV" | {dataSource: .dataSource}')
 
-          #echo "modified_response= $modified_response"
           echo "PARSED_DATA=$(echo "$modified_response" | tr -d '\n')" >> "$GITHUB_ENV"
-
           echo "Successfully parsed CSV file"
-          echo "$PARSED_DATA"
 
       - name: Create Data Source
         run: |
@@ -107,7 +103,3 @@ jobs:
           fi
           
           echo "Successfully created data source with ID: $DATA_SOURCE_ID"
-
-      - name: Output Results
-        run: |
-          echo "Data Source ID: $DATA_SOURCE_ID"
