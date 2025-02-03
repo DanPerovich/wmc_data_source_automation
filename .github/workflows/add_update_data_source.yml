@@ -43,16 +43,12 @@ jobs:
           fi
           
           # Modify parsed_response to include name and type
-          #modified_response=$(echo "$parsed_response" | jq --arg name "$CSV_FILENAME" '. + {name: $name, type: "CSV"}')
-          #modified_response=$(echo '{"name":"'"$CSV_FILENAME"'","type":"CSV"}' | jq --argjson parsed "$parsed_response" '. + $parsed')          
-          #modified_response=$(echo "$parsed_response" | jq '{dataSource: {name: "'"$CSV_FILENAME"'", type: "CSV"} + .}')
-          #modified_response=$(echo "$parsed_response" | jq '.dataSource.name="'"$CSV_FILENAME"'" | .dataSource.type="CSV"')
-          #modified_response=$(echo "$parsed_response" | jq '{name: "'"$CSV_FILENAME"'", type: "CSV", dataSource: .dataSource}')
           modified_response=$(echo "$parsed_response" | jq '.dataSource.name="'"$CSV_FILENAME"'" | .dataSource.type="CSV" | {dataSource: .dataSource}')
 
-          echo "modified_response= $modified_response"
+          #echo "modified_response= $modified_response"
+          #echo "PARSED_DATA=$modified_response" >> $GITHUB_ENV
+          printf "PARSED_DATA=%s\n" "$modified_response" >> "$GITHUB_ENV"
 
-          echo "PARSED_DATA=$modified_response" >> $GITHUB_ENV
           echo "Successfully parsed CSV file"
 
       - name: Create Data Source
