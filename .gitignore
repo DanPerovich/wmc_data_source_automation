@@ -1,2 +1,3 @@
 parseCsv.sh
 .DS_Store
+ignore_these/*.*
