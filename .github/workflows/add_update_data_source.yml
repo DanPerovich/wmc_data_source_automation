@@ -78,7 +78,7 @@ jobs:
             echo "Call api with url: 'https://api.wiremock.cloud/v1/users/${USER_ID}/data-sources?q=$(basename "$file" .csv)'"
             response=$(curl --request GET \
                 -H "Authorization: Token $WIREMOCK_CLOUD_API_TOKEN" \
-                --url "https://api.wiremock.cloud/v1/users/${USER_ID}/data-sources?q=$(basename "$file" .csv)")
+                --url "https://api.wiremock.cloud/v1/users/${USER_ID}/data-sources?q=$(basename '$file' .csv)")
             echo "DATA_SOURCE_ID=$(echo "$response" | jq -r '.dataSources[0].id' | tr -d '[:space:]')"
             DATA_SOURCE_ID=$(echo "$response" | jq -r '.dataSources[0].id' | tr -d '[:space:]')"
 
@@ -89,15 +89,18 @@ jobs:
                 --data-binary "@$file" \
                 https://api.wiremock.cloud/v1/data-sources/parse)
             
+            echo "parsed_response=$parsed_response"    
+
             if [ $? -ne 0 ]; then
                 echo "Failed to parse CSV file"
                 exit 1
             fi
             
             # Modify parsed_response to include name and type
-            modified_response=$(echo "$parsed_response" | jq -c '.dataSource.name="'"$(basename "$file" .csv)"'" | .dataSource.type="CSV" | {dataSource: .dataSource}')
+            #modified_response=$(echo "$parsed_response" | jq -c '.dataSource.name="'"$(basename "$file" .csv)"'" | .dataSource.type="CSV" | {dataSource: .dataSource}')
 
-            echo "Successfully parsed CSV file"
+
+            #echo "Successfully parsed CSV file"
 
             # Update Data Source
             #echo "https://api.wiremock.cloud/v1/data-sources/${DATA_SOURCE_ID}"
