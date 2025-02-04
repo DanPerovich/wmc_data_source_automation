@@ -75,10 +75,11 @@ jobs:
           for file in $MODIFIED_FILES; do
             # Your commands to process each MODIFIED file here
             echo "Processing modified file: $file / $(basename "$file" .csv)"
-            echo "Call api with url: https://api.wiremock.cloud/v1/users/${USER_ID}/data-sources?q=$(basename "$file" .csv)"
+            #echo "DEBUG: Call api with url: https://api.wiremock.cloud/v1/users/${USER_ID}/data-sources?q=$(basename "$file" .csv)"
             response=$(curl --request GET \
                 -H "Authorization: Token $WIREMOCK_CLOUD_API_TOKEN" \
                 --url "https://api.wiremock.cloud/v1/users/${USER_ID}/data-sources?q=$(basename '$file' .csv)")
+            echo "DEBUG: response=$response"
             echo "DATA_SOURCE_ID=$(echo "$response" | jq -r '.dataSources[0].id' | tr -d '[:space:]')" | tee -a $GITHUB_OUTPUT
             #DATA_SOURCE_ID=$(echo "$response" | jq -r '.dataSources[0].id' | tr -d '[:space:]')
 
