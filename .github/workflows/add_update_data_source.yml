@@ -75,11 +75,31 @@ jobs:
           for file in $MODIFIED_FILES; do
             # Your commands to process each MODIFIED file here
             echo "Processing modified file: $file / $(basename "$file" .csv)"
-            #echo "DEBUG: Call api with url: https://api.wiremock.cloud/v1/users/${USER_ID}/data-sources?q=$(basename "$file" .csv)"
+            
             response=$(curl --request GET \
                 -H "Authorization: Token $WIREMOCK_CLOUD_API_TOKEN" \
                 --url "https://api.wiremock.cloud/v1/users/${USER_ID}/data-sources?q=$(basename "$file" .csv)")
-            #echo "DEBUG: response=$response"
+            
+            # Check if curl command was successful
+            if [ $? -ne 0 ]; then
+                echo "Failed to fetch data sources"
+                exit 1
+            }
+            
+            # Count the number of data sources returned
+            data_source_count=$(echo "$response" | jq '.dataSources | length')
+
+            # Validate the number of data sources
+            if [ "$data_source_count" -eq 0 ]; then
+                echo "Error: No matching data source found for $(basename "$file" .csv)"
+                exit 1
+            elif [ "$data_source_count" -gt 1 ]; then
+                echo "Error: Multiple data sources found for $(basename "$file" .csv). Expected exactly one match."
+                echo "Found $data_source_count matches:"
+                echo "$response" | jq -r '.dataSources[] | "- ID: \(.id), Name: \(.name)"'
+                exit 1
+            fi
+            
             DATA_SOURCE_ID=$(echo "$response" | jq -r '.dataSources[0].id' | tr -d '[:space:]')
             echo "DATA_SOURCE_ID=$DATA_SOURCE_ID" >> $GITHUB_OUTPUT
 
@@ -105,11 +125,13 @@ jobs:
             #echo "DEBUG: API-ready CSV payload: ${modified_response}"
 
             # Update Data Source
-            echo "DEBUG: PUT API URI=https://api.wiremock.cloud/v1/data-sources/${DATA_SOURCE_ID}"
+            #echo "DEBUG: PUT API URI=https://api.wiremock.cloud/v1/data-sources/${DATA_SOURCE_ID}"
             put_response=$(curl -X PUT -H "Authorization: Token $WIREMOCK_CLOUD_API_TOKEN" -H "Content-Type: application/json" -d "${modified_response}" --url "https://api.wiremock.cloud/v1/data-sources/${DATA_SOURCE_ID}")
 
             if [ $? -ne 0 ]; then
                 echo "Failed to PUT updated CSV file"
                 exit 1
             fi
+
+            echo "Successfully uploaded updated CSV file"
           done
