@@ -90,12 +90,12 @@ jobs:
                 --data-binary "@$file" \
                 https://api.wiremock.cloud/v1/data-sources/parse)
             
-            #echo "DEBUG: parsed_response=$parsed_response"    
-
             if [ $? -ne 0 ]; then
                 echo "Failed to parse CSV file"
                 exit 1
             fi
+            #echo "DEBUG: parsed_response=$parsed_response"    
+
             
             # Modify parsed_response to include name and type
             modified_response=$(echo "$parsed_response" | jq -c '.dataSource.name="'"$(basename "$file" .csv)"'" | .dataSource.type="CSV" | {dataSource: .dataSource}')
@@ -106,5 +106,10 @@ jobs:
 
             # Update Data Source
             echo "DEBUG: PUT API URI=https://api.wiremock.cloud/v1/data-sources/${DATA_SOURCE_ID}"
-            #put_response=$(curl -X PUT -H "Authorization: Token $WIREMOCK_CLOUD_API_TOKEN" -H "Content-Type: application/json" -d "${modified_response}" --url "https://api.wiremock.cloud/v1/data-sources/${DATA_SOURCE_ID}")
+            put_response=$(curl -X PUT -H "Authorization: Token $WIREMOCK_CLOUD_API_TOKEN" -H "Content-Type: application/json" -d "${modified_response}" --url "https://api.wiremock.cloud/v1/data-sources/${DATA_SOURCE_ID}")
+
+            if [ $? -ne 0 ]; then
+                echo "Failed to PUT updated CSV file"
+                exit 1
+            fi
           done
