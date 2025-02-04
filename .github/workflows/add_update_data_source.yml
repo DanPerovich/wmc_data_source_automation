@@ -84,7 +84,6 @@ jobs:
             if [ $? -ne 0 ]; then
                 echo "Failed to fetch data sources"
                 exit 1
-            }
             
             # Count the number of data sources returned
             data_source_count=$(echo "$response" | jq '.dataSources | length')
