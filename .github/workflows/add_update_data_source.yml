@@ -40,7 +40,7 @@ jobs:
             echo "New CSV files detected:"
             echo "$NEW_FILES"
           else
-            echo "new_csv_files=" | tee -a $GITHUB_OUTPUT
+            echo "new_csv_files=<null>" | tee -a $GITHUB_OUTPUT
           fi
 
           # Improved logic for modified files
@@ -54,7 +54,7 @@ jobs:
             echo "Modified CSV files detected:"
             echo "$MODIFIED_FILES"
           else
-            echo "modified_csv_files=" | tee -a $GITHUB_OUTPUT
+            echo "modified_csv_files=<null>" | tee -a $GITHUB_OUTPUT
           fi
 
       - name: Take action on new files
