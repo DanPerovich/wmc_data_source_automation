@@ -79,9 +79,8 @@ jobs:
             response=$(curl --request GET \
                 -H "Authorization: Token $WIREMOCK_CLOUD_API_TOKEN" \
                 --url "https://api.wiremock.cloud/v1/users/${USER_ID}/data-sources?q=$(basename "$file" .csv)")
-            echo "DEBUG: response=$response"
+            #echo "DEBUG: response=$response"
             echo "DATA_SOURCE_ID=$(echo "$response" | jq -r '.dataSources[0].id' | tr -d '[:space:]')" | tee -a $GITHUB_OUTPUT
-            #DATA_SOURCE_ID=$(echo "$response" | jq -r '.dataSources[0].id' | tr -d '[:space:]')
 
             # Parse CSV file 
             parsed_response=$(curl -X POST \
@@ -90,7 +89,7 @@ jobs:
                 --data-binary "@$file" \
                 https://api.wiremock.cloud/v1/data-sources/parse)
             
-            echo "DEBUG: parsed_response=$parsed_response"    
+            #echo "DEBUG: parsed_response=$parsed_response"    
 
             if [ $? -ne 0 ]; then
                 echo "Failed to parse CSV file"
@@ -102,9 +101,9 @@ jobs:
 
 
             echo "Successfully parsed CSV file"
-            echo "DEBUG: API-ready CSV payload: ${modified_response}"
+            #echo "DEBUG: API-ready CSV payload: ${modified_response}"
 
             # Update Data Source
-            echo "https://api.wiremock.cloud/v1/data-sources/$DATA_SOURCE_ID"
+            echo "DEBUG: PUT API URI=https://api.wiremock.cloud/v1/data-sources/${DATA_SOURCE_ID}"
             #put_response=$(curl -X PUT -H "Authorization: Token $WIREMOCK_CLOUD_API_TOKEN" -H "Content-Type: application/json" -d "${modified_response}" --url "https://api.wiremock.cloud/v1/data-sources/${DATA_SOURCE_ID}")
           done
