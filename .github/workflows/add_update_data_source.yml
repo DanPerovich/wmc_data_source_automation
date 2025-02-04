@@ -37,8 +37,6 @@ jobs:
           if [[ $NEW_FILES_COUNT -gt 0 ]]; then
             NEW_FILES=$(echo "$CHANGED_FILES" | grep -oE '^A\s+data/.*\.csv$' | cut -d' ' -f2)
             echo "new_csv_files=$NEW_FILES" | tee -a $GITHUB_OUTPUT
-            echo "New CSV files detected:"
-            echo "$NEW_FILES"
           else
             echo "new_csv_files=<null>" | tee -a $GITHUB_OUTPUT
           fi
@@ -51,8 +49,6 @@ jobs:
 
           if [[ $MODIFIED_FILES_COUNT -gt 0 ]]; then
             echo "modified_csv_files=$MODIFIED_FILES" | tee -a $GITHUB_OUTPUT
-            echo "Modified CSV files detected:"
-            echo "$MODIFIED_FILES"
           else
             echo "modified_csv_files=<null>" | tee -a $GITHUB_OUTPUT
           fi
