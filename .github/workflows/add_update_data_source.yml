@@ -28,8 +28,8 @@ jobs:
         id: get-user-id
         run: |
           response=$(curl -s -H "Authorization: Token $WIREMOCK_CLOUD_API_TOKEN" \
-              https://api.wiremock.cloud/v1/users/me)
-          USER_ID=$(echo "$response" | jq -r '.id')
+              https://api.wiremock.cloud/v1/users/self)
+          USER_ID=$(echo "$response" | jq -r '.user.id')
           if [ -z "$USER_ID" ] || [ "$USER_ID" = "null" ]; then
             echo "Error: could not extract user ID from response: $response"
             exit 1
