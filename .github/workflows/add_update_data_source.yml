@@ -80,64 +80,71 @@ jobs:
           echo "Performing actions on MODIFIED CSV files..."
           MODIFIED_FILES=$(echo "${{ steps.check-changes.outputs.modified_csv_files }}")
           for file in $MODIFIED_FILES; do
-            # Your commands to process each MODIFIED file here
             echo "Processing modified file: $file"
-            
+
             DS_NAME=$(basename "$file" .csv)
-            echo "Getting existing data source named exactly '${DS_NAME}'..."
-            response=$(curl -s --request GET \
+            echo "Searching for existing data source named exactly '${DS_NAME}'..."
+            search_response=$(curl -s --request GET \
                 -H "Authorization: Token $WIREMOCK_CLOUD_API_TOKEN" \
                 --url "https://api.wiremock.cloud/v1/users/${USER_ID}/data-sources?q=${DS_NAME}")
 
-            # Check if curl command was successful
             if [ $? -ne 0 ]; then
                 echo "Failed to fetch data sources"
                 exit 1
             fi
 
-            # Count exact name matches
-            data_source_count=$(echo "$response" | jq --arg name "$DS_NAME" '[.dataSources[] | select(.name == $name)] | length')
+            data_source_count=$(echo "$search_response" | jq --arg name "$DS_NAME" '[.dataSources[] | select(.name == $name)] | length')
 
-            # Validate the number of data sources
-            if [ "$data_source_count" -eq 0 ]; then
-                echo "Error: No data source found with name '${DS_NAME}'"
-                exit 1
-            elif [ "$data_source_count" -gt 1 ]; then
-                echo "Error: Multiple data sources found with name '${DS_NAME}'. Expected exactly one match."
-                echo "Found $data_source_count matches:"
-                echo "$response" | jq -r --arg name "$DS_NAME" '.dataSources[] | select(.name == $name) | "- ID: \(.id), Name: \(.name)"'
+            if [ "$data_source_count" -gt 1 ]; then
+                echo "Error: Multiple data sources found with name '${DS_NAME}'. Expected at most one match."
+                echo "$search_response" | jq -r --arg name "$DS_NAME" '.dataSources[] | select(.name == $name) | "- ID: \(.id), Name: \(.name)"'
                 exit 1
             fi
 
-            DATA_SOURCE_ID=$(echo "$response" | jq -r --arg name "$DS_NAME" '.dataSources[] | select(.name == $name) | .id' | tr -d '[:space:]')
-            echo "DATA_SOURCE_ID=$DATA_SOURCE_ID" >> $GITHUB_OUTPUT
-
-            # Parse CSV file 
+            # Parse CSV file
             echo "Parsing $file..."
             parsed_response=$(curl -s -X POST \
                 -H "Authorization: Token $WIREMOCK_CLOUD_API_TOKEN" \
                 -H "Content-Type: text/csv" \
                 --data-binary "@$file" \
                 https://api.wiremock.cloud/v1/data-sources/parse)
-            
+
             if [ $? -ne 0 ]; then
                 echo "Failed to parse CSV file"
                 exit 1
             fi
-            
-            # Modify parsed_response to include name and type
-            modified_response=$(echo "$parsed_response" | jq -c '.dataSource.name="'"$(basename "$file" .csv)"'" | .dataSource.type="CSV" | {dataSource: .dataSource}')
 
+            modified_response=$(echo "$parsed_response" | jq -c --arg name "$DS_NAME" '.dataSource.name=$name | .dataSource.type="CSV" | {dataSource: .dataSource}')
             echo "Successfully parsed CSV file"
 
-            # Update Data Source
-            echo "Uploading updated CSV file to WireMock Cloud..."
-            put_response=$(curl -X PUT -H "Authorization: Token $WIREMOCK_CLOUD_API_TOKEN" -H "Content-Type: application/json" -d "${modified_response}" --url "https://api.wiremock.cloud/v1/data-sources/${DATA_SOURCE_ID}")
+            if [ "$data_source_count" -eq 0 ]; then
+                echo "No existing data source found — creating '${DS_NAME}'..."
+                create_response=$(curl -s -X POST \
+                    -H "Authorization: Token $WIREMOCK_CLOUD_API_TOKEN" \
+                    -H "Content-Type: application/json" \
+                    -d "${modified_response}" \
+                    --url "https://api.wiremock.cloud/v1/users/${USER_ID}/data-sources")
 
-            if [ $? -ne 0 ]; then
-                echo "Failed to PUT updated CSV file"
-                exit 1
+                if [ $? -ne 0 ]; then
+                    echo "Failed to create data source"
+                    exit 1
+                fi
+
+                echo "Successfully created data source '${DS_NAME}'"
+            else
+                DATA_SOURCE_ID=$(echo "$search_response" | jq -r --arg name "$DS_NAME" '.dataSources[] | select(.name == $name) | .id' | tr -d '[:space:]')
+                echo "Updating existing data source '${DS_NAME}' (ID: ${DATA_SOURCE_ID})..."
+                put_response=$(curl -s -X PUT \
+                    -H "Authorization: Token $WIREMOCK_CLOUD_API_TOKEN" \
+                    -H "Content-Type: application/json" \
+                    -d "${modified_response}" \
+                    --url "https://api.wiremock.cloud/v1/data-sources/${DATA_SOURCE_ID}")
+
+                if [ $? -ne 0 ]; then
+                    echo "Failed to update data source"
+                    exit 1
+                fi
+
+                echo "Successfully updated data source '${DS_NAME}'"
             fi
-
-            echo "Successfully uploaded updated CSV file"
           done
