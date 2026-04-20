@@ -83,32 +83,33 @@ jobs:
             # Your commands to process each MODIFIED file here
             echo "Processing modified file: $file"
             
-            echo "Getting existing data sources whose name contains $(basename "$file" .csv)..."
+            DS_NAME=$(basename "$file" .csv)
+            echo "Getting existing data source named exactly '${DS_NAME}'..."
             response=$(curl -s --request GET \
                 -H "Authorization: Token $WIREMOCK_CLOUD_API_TOKEN" \
-                --url "https://api.wiremock.cloud/v1/users/${USER_ID}/data-sources?q=$(basename "$file" .csv)")
-            
+                --url "https://api.wiremock.cloud/v1/users/${USER_ID}/data-sources?q=${DS_NAME}")
+
             # Check if curl command was successful
             if [ $? -ne 0 ]; then
                 echo "Failed to fetch data sources"
                 exit 1
             fi
-            
-            # Count the number of data sources returned
-            data_source_count=$(echo "$response" | jq '.dataSources | length')
+
+            # Count exact name matches
+            data_source_count=$(echo "$response" | jq --arg name "$DS_NAME" '[.dataSources[] | select(.name == $name)] | length')
 
             # Validate the number of data sources
             if [ "$data_source_count" -eq 0 ]; then
-                echo "Error: No matching data source found for $(basename "$file" .csv)"
+                echo "Error: No data source found with name '${DS_NAME}'"
                 exit 1
             elif [ "$data_source_count" -gt 1 ]; then
-                echo "Error: Multiple data sources found for $(basename "$file" .csv). Expected exactly one match."
+                echo "Error: Multiple data sources found with name '${DS_NAME}'. Expected exactly one match."
                 echo "Found $data_source_count matches:"
-                echo "$response" | jq -r '.dataSources[] | "- ID: \(.id), Name: \(.name)"'
+                echo "$response" | jq -r --arg name "$DS_NAME" '.dataSources[] | select(.name == $name) | "- ID: \(.id), Name: \(.name)"'
                 exit 1
             fi
-            
-            DATA_SOURCE_ID=$(echo "$response" | jq -r '.dataSources[0].id' | tr -d '[:space:]')
+
+            DATA_SOURCE_ID=$(echo "$response" | jq -r --arg name "$DS_NAME" '.dataSources[] | select(.name == $name) | .id' | tr -d '[:space:]')
             echo "DATA_SOURCE_ID=$DATA_SOURCE_ID" >> $GITHUB_OUTPUT
 
             # Parse CSV file 
