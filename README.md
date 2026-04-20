@@ -16,12 +16,11 @@ The workflow enforces that exactly one data source matches the filename. It will
 ## Prerequisites
 
 - A [WireMock Cloud](https://wiremock.io) account
-- An existing data source in WireMock Cloud whose name matches the CSV filename (without the `.csv` extension)
 - A WireMock Cloud API token
 
 ## Repository Secrets
 
-Configure the following secrets in your GitHub repository (**Settings → Secrets and variables → Actions**):
+Configure the following secret in your GitHub repository (**Settings → Secrets and variables → Actions**):
 
 | Secret | Description |
 |---|---|
@@ -42,9 +41,9 @@ Any CSV file placed in the `data/` directory will be watched. The filename (with
 ## Usage
 
 1. Fork or clone this repository
-2. Add the required secrets to your GitHub repository
-3. Edit a CSV file under `data/` and push to `main`
-4. The GitHub Actions workflow will detect the change and update the matching WireMock Cloud data source automatically
+2. Add the required secret to your GitHub repository
+3. Edit or add a CSV file under `data/` and push to `main`
+4. The GitHub Actions workflow will detect the change and update the matching WireMock Cloud data source automatically or create a new data source
 
 ## Workflow Trigger
 
@@ -59,6 +58,3 @@ on:
       - 'data/**'
 ```
 
-## Extending the Workflow
-
-The workflow includes a stub step for handling **newly added** CSV files (i.e., creating a new data source from scratch). That logic is not yet implemented — only updates to existing data sources are currently supported.
